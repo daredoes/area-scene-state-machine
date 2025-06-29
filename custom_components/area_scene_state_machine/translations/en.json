@@ -2,20 +2,37 @@
     "config": {
         "step": {
             "user": {
-                "description": "If you need help with the configuration have a look here: https://github.com/ludeeus/area_scene_state_machine",
+                "title": "Add Area Scenes",
+                "description": "This will create a scene selector for each of your areas. Are you sure you want to set up Area Scenes?",
+                "data": {}
+            }
+        },
+        "abort": {
+            "single_instance_allowed": "Only a single configuration of Area Scenes is allowed."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Configure Area Scenes",
+                "description": "Select an area to customize its scene selector.",
                 "data": {
-                    "username": "Username",
-                    "password": "Password"
+                    "area": "Area"
+                }
+            },
+            "area": {
+                "title": "Customize '{area_name}' Scene Selector",
+                "description": "Provide custom metadata for the scene selector in this area. Leave fields blank to use defaults.",
+                "data": {
+                    "name": "Custom Name",
+                    "icon": "Custom Icon (e.g., mdi:sofa)",
+                    "color": "Color",
+                    "reset_mode": "Reset to 'None' after activation"
                 }
             }
         },
-        "error": {
-            "auth": "Username/Password is wrong.",
-            "connection": "Unable to connect to the server.",
-            "unknown": "Unknown error occurred."
-        },
         "abort": {
-            "already_configured": "This entry is already configured."
+            "no_areas": "No areas found. Please create an area in Home Assistant first."
         }
     }
 }
