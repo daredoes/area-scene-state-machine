@@ -1,0 +1,12 @@
+{
+  "domain": "area_scene_state_machine",
+  "name": "Area Scene State Machine",
+  "codeowners": [
+    "@ludeeus"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/ludeeus/area_scene_state_machine",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/ludeeus/area_scene_state_machine/issues",
+  "version": "0.1.0"
+}
