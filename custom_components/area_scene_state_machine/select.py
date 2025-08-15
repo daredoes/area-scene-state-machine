@@ -10,8 +10,10 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er, area_registry as ar
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .coordinator import AreaScenesCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,80 +26,116 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the area scenes select entities from a config entry."""
-    area_registry = ar.async_get(hass)
-    entity_registry = er.async_get(hass)
-
-    # Get customization from the config entry's options
+    coordinator: AreaScenesCoordinator = hass.data[DOMAIN][entry.entry_id]
     area_config = entry.options.get("customize", {})
 
-    scene_entities_to_area_ids = {}
-    for entity_entry in entity_registry.entities.values():
-        if entity_entry.domain == SCENE_DOMAIN:
-            if not scene_entities_to_area_ids.get(entity_entry.area_id):
-                scene_entities_to_area_ids[entity_entry.area_id] = []
-            scene_entities_to_area_ids[entity_entry.area_id].append(entity_entry)
+    @callback
+    def _async_add_entities_for_area(area_id: str):
+        """Add select entities for a specific area."""
+        if area_id in coordinator.data["areas"]:
+            area = coordinator.data["areas"][area_id]
+            scenes = coordinator.data["scenes"].get(area_id, [])
+            if scenes:
+                customization = area_config.get(area.id, {})
+                async_add_entities(
+                    [
+                        AreaSceneSelect(
+                            coordinator,
+                            entry.entry_id,
+                            area,
+                            scenes,
+                            customization,
+                        )
+                    ]
+                )
 
-    selects = []
-    for area in area_registry.async_list_areas():
-        area_id = area.id
-        # Get scene entities in the current area
-        scene_entities_in_area = scene_entities_to_area_ids.get(area_id, [])
+    # Add initial entities
+    for area_id in coordinator.data["areas"]:
+        _async_add_entities_for_area(area_id)
 
-        if not scene_entities_in_area:
-            _LOGGER.debug(
-                f"No scenes found in area: {area.name}, skipping select creation."
-            )
-            continue
-
-        customization = area_config.get(area.id, {})
-
-        selects.append(
-            AreaSceneSelect(
-                hass,
-                entry.entry_id,
-                area,
-                scene_entities_in_area,
-                customization,
-            )
+    # Listen for coordinator updates to add new entities
+    entry.async_on_unload(
+        coordinator.async_add_listener(
+            lambda: _handle_coordinator_update(coordinator, async_add_entities, area_config, entry.entry_id)
         )
+    )
 
-    async_add_entities(selects)
+@callback
+def _handle_coordinator_update(
+    coordinator: AreaScenesCoordinator,
+    async_add_entities: AddEntitiesCallback,
+    area_config: dict,
+    entry_id: str,
+):
+    """Handle coordinator updates and add new select entities if areas are added."""
+    existing_entities = {e.unique_id for e in coordinator.hass.data["entity_registry"].entities.values() if e.platform == DOMAIN}
+    
+    new_selects = []
+    for area_id, area in coordinator.data["areas"].items():
+        uid = f"{DOMAIN}_{area_id}_scenes"
+        if uid not in existing_entities and coordinator.data["scenes"].get(area_id):
+            _LOGGER.debug(f"Found new area with scenes: {area.name}. Creating select entity.")
+            customization = area_config.get(area.id, {})
+            new_selects.append(
+                AreaSceneSelect(
+                    coordinator,
+                    entry_id,
+                    area,
+                    coordinator.data["scenes"][area_id],
+                    customization,
+                )
+            )
+    
+    if new_selects:
+        async_add_entities(new_selects)
 
 
-class AreaSceneSelect(SelectEntity):
+class AreaSceneSelect(CoordinatorEntity, SelectEntity):
     """Representation of a scene select entity for an area."""
 
     def __init__(
         self,
-        hass: HomeAssistant,
+        coordinator: AreaScenesCoordinator,
         entry_id: str,
         area: ar.AreaEntry,
         scene_entities: list[er.RegistryEntry],
         customization: dict,
     ) -> None:
         """Initialize the select entity."""
-        self.hass = hass
+        super().__init__(coordinator)
+        self.hass = coordinator.hass
         self._entry_id = entry_id
         self._area = area
-        self._scene_entities = {s.entity_id: s for s in scene_entities}
         self._customization = customization
         self._is_activating = False  # Flag to prevent feedback loops
 
         self._attr_name = self._customization.get("name") or f"{self._area.name} Scenes"
         self._attr_unique_id = f"{DOMAIN}_{self._area.id}_scenes"
         self._attr_icon = self._customization.get("icon") or "mdi:palette-outline"
+        self._reset_mode = self._customization.get("reset_mode", False)
+        self._attr_current_option = RESET_OPTION if self._reset_mode else None
+        
+        self._update_from_coordinator()
 
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._update_from_coordinator()
+        self.async_write_ha_state()
+
+    def _update_from_coordinator(self):
+        """Update the entity's attributes from the coordinator's data."""
+        scenes_in_area = self.coordinator.data["scenes"].get(self._area.id, [])
+        self._scene_entities = {s.entity_id: s for s in scenes_in_area}
+        
         self._scene_name_map = {
             (s.name or s.original_name or "unknown_scene"): s.entity_id
-            for s in scene_entities
+            for s in scenes_in_area
         }
         self._attr_options = list(self._scene_name_map.keys())
 
-        self._reset_mode = self._customization.get("reset_mode", False)
         if self._reset_mode:
             self._attr_options.append(RESET_OPTION)
-
-        self._attr_current_option = RESET_OPTION if self._reset_mode else None
 
         self._attr_extra_state_attributes = {
             "area_id": self._area.id,
@@ -105,6 +143,11 @@ class AreaSceneSelect(SelectEntity):
             "reset_mode": self._reset_mode,
             "scene_entities": list(self._scene_entities.keys()),
         }
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return super().available and self._area.id in self.coordinator.data["areas"]
 
     @property
     def device_info(self):
@@ -115,7 +158,7 @@ class AreaSceneSelect(SelectEntity):
             "suggested_area": self._area.id,
             "manufacturer": "Area Scenes Integration",
             "model": "Scene Selector",
-            "via_device": (DOMAIN, self._entry_id),
+            "via_device": (DOMAIN, self.coordinator.config_entry.entry_id),
         }
 
     async def async_added_to_hass(self) -> None:
