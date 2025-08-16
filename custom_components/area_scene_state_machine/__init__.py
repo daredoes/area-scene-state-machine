@@ -6,6 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
+from .coordinator import AreaScenesCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,15 +21,29 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Area Scenes from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
+    coordinator = AreaScenesCoordinator(hass)
+    await coordinator.async_config_entry_first_refresh()
 
-    # Store the config entry so we can access it from the platform
-    hass.data[DOMAIN][entry.entry_id] = entry
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Add a listener for options updates
     entry.async_on_unload(entry.add_update_listener(update_listener))
+
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Migrate old entry."""
+    _LOGGER.debug("Migrating from version %s", config_entry.version)
+
+    if config_entry.version == 1:
+        # No migration needed for the first version
+        config_entry.version = 2
+        hass.config_entries.async_update_entry(config_entry, data={})
+
+    _LOGGER.info("Migration to version %s successful", config_entry.version)
 
     return True
 
