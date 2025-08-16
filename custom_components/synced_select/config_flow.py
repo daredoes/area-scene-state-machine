@@ -6,9 +6,9 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, OptionsFlow, ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import selector
+from homeassistant.helpers import entity_registry as er, selector
 
-from .const import DOMAIN, CONF_ENTITIES
+from .const import DOMAIN, CONF_ENTITIES, LOGGER
 
 
 def get_select_entities(hass: HomeAssistant) -> list[str]:
@@ -53,12 +53,21 @@ class SyncedSelectOptionsFlowHandler(OptionsFlow):
 
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
+        self.config_entry_id = config_entry.entry_id
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
+        
+        config_entry = self.hass.config_entries.async_get_entry(self.config_entry_id)
+
+        entity_registry = er.async_get(self.hass)
+        entities_to_exclude = [ 
+            entry.entity_id
+            for entry in entity_registry.entities.values()
+            if entry.config_entry_id == config_entry.entry_id
+        ]
 
         return self.async_show_form(
             step_id="init",
@@ -66,10 +75,12 @@ class SyncedSelectOptionsFlowHandler(OptionsFlow):
                 {
                     vol.Required(
                         CONF_ENTITIES,
-                        default=self.config_entry.options.get(CONF_ENTITIES, []),
+                        default=config_entry.options.get(CONF_ENTITIES, []),
                     ): selector.EntitySelector(
                         selector.EntitySelectorConfig(
-                            domain=["select", "input_select"], multiple=True
+                            domain=["select", "input_select"], 
+                            multiple=True,
+                            exclude_entities=entities_to_exclude
                         ),
                     ),
                 }
