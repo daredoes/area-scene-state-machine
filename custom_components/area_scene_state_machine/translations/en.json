@@ -21,7 +21,7 @@
                 }
             },
             "area": {
-                "title": "Customize '{area_name}' Scene Selector",
+                "title": "Customize {area_name} Scene Selector",
                 "description": "Provide custom metadata for the scene selector in this area. Leave fields blank to use defaults.",
                 "data": {
                     "name": "Custom Name",
