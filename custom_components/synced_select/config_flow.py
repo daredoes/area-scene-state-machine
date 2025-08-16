@@ -20,6 +20,34 @@ def get_select_entities(hass: HomeAssistant) -> list[str]:
 
 
 
+class SyncedSelectConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Synced Select."""
+
+    VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> "SyncedSelectOptionsFlowHandler":
+        """Get the options flow for this handler."""
+        return SyncedSelectOptionsFlowHandler(config_entry)
+
+    async def async_step_user(self, user_input=None):
+        """Handle the initial step."""
+        if user_input is not None:
+            return self.async_create_entry(title=user_input["name"], data=user_input)
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("name"): str,
+                    vol.Required(CONF_ENTITIES): selector.EntitySelector(
+                        selector.EntitySelectorConfig(domain=["select", "input_select"], multiple=True),
+                    ),
+                }
+            ),
+        )
+
 class SyncedSelectOptionsFlowHandler(OptionsFlow):
     """Handle an options flow for Synced Select."""
 
@@ -43,34 +71,6 @@ class SyncedSelectOptionsFlowHandler(OptionsFlow):
                         selector.EntitySelectorConfig(
                             domain=["select", "input_select"], multiple=True
                         ),
-                    ),
-                }
-            ),
-        )
-
-class SyncedSelectConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Synced Select."""
-
-    VERSION = 1
-
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> SyncedSelectOptionsFlowHandler:
-        """Get the options flow for this handler."""
-        return SyncedSelectOptionsFlowHandler(config_entry)
-
-    async def async_step_user(self, user_input=None):
-        """Handle the initial step."""
-        if user_input is not None:
-            return self.async_create_entry(title=user_input["name"], data=user_input)
-
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("name"): str,
-                    vol.Required(CONF_ENTITIES): selector.EntitySelector(
-                        selector.EntitySelectorConfig(domain=["select", "input_select"], multiple=True),
                     ),
                 }
             ),
