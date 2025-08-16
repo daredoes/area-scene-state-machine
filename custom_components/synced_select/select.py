@@ -80,6 +80,6 @@ class SyncedSelectEntity(CoordinatorEntity[SyncedSelectCoordinator], SelectEntit
 
     async def _reset_state(self) -> None:
         """Reset the select entity state after a delay."""
-        await asyncio.sleep(0.15)
+        await asyncio.sleep(0.25)
         self._attr_current_option = None
         self.async_write_ha_state()
