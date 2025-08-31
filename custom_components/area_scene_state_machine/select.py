@@ -166,8 +166,9 @@ class AreaSceneSelect(CoordinatorEntity, SelectEntity, RestoreEntity):
         """Run when entity about to be added."""
         await super().async_added_to_hass()
 
+        # Restore the last known state
         last_state = await self.async_get_last_state()
-        if last_state and self._attr_current_option is None:
+        if last_state and last_state.state in self.options:
             self._attr_current_option = last_state.state
 
         # Listen for scene activations
