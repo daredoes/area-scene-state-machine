@@ -1,46 +1,75 @@
-# Notice
+# Area Scene State Machine
 
-The component and platforms in this repository are not meant to be used by a
-user, but as a "blueprint" that custom component developers can build
-upon, to make more awesome stuff.
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
-HAVE FUN! 😎
+A Home Assistant integration that creates a `select` entity for each area containing scenes. This entity acts as a state machine, allowing you to see which scene is currently active and to activate other scenes.
 
-## Why?
+## Goal
 
-This is simple, by having custom_components look (README + structure) the same
-it is easier for developers to help each other and for users to start using them.
+The primary goal of this integration is to simplify scene management in Home Assistant, especially for tablet dashboards. Instead of adding individual scenes to a dashboard, you can add a single `select` entity that represents all scenes in a specific area. This provides a clean and intuitive way to manage scene states.
 
-If you are a developer and you want to add things to this "blueprint" that you think more
-developers will have use for, please open a PR to add it :)
+## How It Works
 
-## What?
+The integration automatically discovers all areas in your Home Assistant configuration that have scenes associated with them. For each of these areas, it creates a `select` entity.
 
-This repository contains multiple files, here is a overview:
+- **State Tracking**: The `select` entity tracks which scene was last activated in that area. If you activate a scene through any means (e.g., an automation, a script, or the Home Assistant UI), the `select` entity will update to reflect that change.
+- **Scene Activation**: You can use the `select` entity to activate any of the scenes in that area. Simply choose a scene from the dropdown list, and the integration will call the `scene.turn_on` service for that scene.
 
-File | Purpose | Documentation
--- | -- | --
-`.devcontainer.json` | Used for development/testing with Visual Studio Code. | [Documentation](https://code.visualstudio.com/docs/remote/containers)
-`.github/ISSUE_TEMPLATE/*.yml` | Templates for the issue tracker | [Documentation](https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository)
-`custom_components/area_scene_state_machine/*` | Integration files, this is where everything happens. | [Documentation](https://developers.home-assistant.io/docs/creating_component_index)
-`CONTRIBUTING.md` | Guidelines on how to contribute. | [Documentation](https://help.github.com/en/github/building-a-strong-community/setting-guidelines-for-repository-contributors)
-`LICENSE` | The license file for the project. | [Documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/licensing-a-repository)
-`README.md` | The file you are reading now, should contain info about the integration, installation and configuration instructions. | [Documentation](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
-`requirements.txt` | Python packages used for development/lint/testing this integration. | [Documentation](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
+## Installation
 
-## How?
+### HACS (Recommended)
 
-1. Create a new repository in GitHub, using this repository as a template by clicking the "Use this template" button in the GitHub UI.
-1. Open your new repository in Visual Studio Code devcontainer (Preferably with the "`Dev Containers: Clone Repository in Named Container Volume...`" option).
-1. Rename all instances of the `area_scene_state_machine` to `custom_components/<your_integration_domain>` (e.g. `custom_components/awesome_integration`).
-1. Rename all instances of the `Area Scene State Machine` to `<Your Integration Name>` (e.g. `Awesome Integration`).
-1. Run the `scripts/develop` to start HA and test out your new integration.
+1.  Add this repository as a custom repository in HACS.
+2.  Search for "Area Scene State Machine" and install it.
+3.  Restart Home Assistant.
 
-## Next steps
+### Manual
 
-These are some next steps you may want to look into:
-- Add tests to your integration, [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) can help you get started.
-- Add brand images (logo/icon) to https://github.com/home-assistant/brands.
-- Create your first release.
-- Share your integration on the [Home Assistant Forum](https://community.home-assistant.io/).
-- Submit your integration to [HACS](https://hacs.xyz/docs/publish/start).
+1.  Copy the `custom_components/area_scene_state_machine` directory to your `custom_components` directory.
+2.  Restart Home Assistant.
+
+## Configuration
+
+Configuration is done through the Home Assistant UI.
+
+1.  Go to **Settings > Devices & Services**.
+2.  Click **Add Integration** and search for **Area Scene State Machine**.
+3.  The integration will be added. There is no initial configuration required.
+4.  To customize the `select` entities, click **Configure** on the integration card. You can then select an area to customize the following options:
+    - **Name**: A custom name for the `select` entity.
+    - **Icon**: A custom icon for the `select` entitiy.
+    - **Color**: A custom color for the `select` entity.
+    - **Reset Mode**: If enabled, the `select` entity will reset to "None" after a scene is activated. This is useful for momentary-style scene activations.
+
+## Use Cases
+
+### Lovelace Dashboards
+
+Add the `select` entity to your Lovelace dashboard to get a simple dropdown for controlling scenes in an area.
+
+```yaml
+type: entities
+entities:
+  - entity: select.living_room_scenes
+```
+
+### Automations
+
+You can use the state of the `select` entity as a trigger or condition in your automations.
+
+```yaml
+trigger:
+  - platform: state
+    entity_id: select.living_room_scenes
+    to: "Movie Time"
+action:
+  - service: light.turn_on
+    target:
+      entity_id: light.ambilight
+```
+
+## Future Vision
+
+- **Advanced State Tracking**: Explore options for more advanced state tracking, such as tracking individual device states within a scene.
+- **Support for Other Entities**: Potentially expand the integration to support other entity types, like scripts or automations.
+- **Dynamic Scene Creation**: Allow users to create and edit scenes directly from the integration.
