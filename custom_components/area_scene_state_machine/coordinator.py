@@ -47,17 +47,15 @@ class AreaScenesCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Updating area and scene data")
         self.areas = {area.id: area for area in self.area_registry.async_list_areas()}
         
-        all_scenes = [
-            entity
-            for entity in self.entity_registry.entities.values()
-            if entity.domain == SCENE_DOMAIN and entity.area_id
-        ]
+        # More efficient way to get scenes by domain
+        all_scenes = self.entity_registry.entities_by_domain.get(SCENE_DOMAIN, [])
 
         self.scenes.clear()
         for scene in all_scenes:
-            if scene.area_id not in self.scenes:
-                self.scenes[scene.area_id] = []
-            self.scenes[scene.area_id].append(scene)
+            if scene.area_id:
+                if scene.area_id not in self.scenes:
+                    self.scenes[scene.area_id] = []
+                self.scenes[scene.area_id].append(scene)
 
         return {"areas": self.areas, "scenes": self.scenes}
 

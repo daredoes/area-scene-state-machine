@@ -1,46 +1,49 @@
-# Notice
+# Area Scene State Machine for Home Assistant
 
-The component and platforms in this repository are not meant to be used by a
-user, but as a "blueprint" that custom component developers can build
-upon, to make more awesome stuff.
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
-HAVE FUN! 😎
+A Home Assistant integration that creates a `select` entity for each area containing scenes. This entity acts as a state machine, representing the currently active scene for that area.
 
-## Why?
+## Features
 
-This is simple, by having custom_components look (README + structure) the same
-it is easier for developers to help each other and for users to start using them.
+- **Automatic Discovery:** Automatically discovers scenes within your Home Assistant areas and creates a corresponding `select` entity for each area.
+- **State Tracking:** The `select` entity tracks which scene was last activated, whether from the UI or an automation.
+- **Seamless Control:** Activating a scene from the `select` entity is the same as activating it directly, allowing for easy integration with your existing dashboards and automations.
+- **UI Configuration:** Customize the name, icon, and other options for each area's `select` entity directly from the Home Assistant UI.
+- **Reset Mode:** An optional "Reset Mode" allows the `select` entity to revert to a "None" state after a scene is activated, useful for triggering automations.
 
-If you are a developer and you want to add things to this "blueprint" that you think more
-developers will have use for, please open a PR to add it :)
+## Installation
 
-## What?
+### HACS (Home Assistant Community Store) - Recommended
 
-This repository contains multiple files, here is a overview:
+1.  Ensure you have [HACS](https://hacs.xyz/) installed.
+2.  Go to HACS > Integrations > and click the three dots in the top right.
+3.  Select "Custom Repositories" and add this repository's URL (`https://github.com/daredoes/area_scene_state_machine`) with the category "Integration".
+4.  Search for "Area Scene State Machine" and install it.
+5.  Restart Home Assistant.
 
-File | Purpose | Documentation
--- | -- | --
-`.devcontainer.json` | Used for development/testing with Visual Studio Code. | [Documentation](https://code.visualstudio.com/docs/remote/containers)
-`.github/ISSUE_TEMPLATE/*.yml` | Templates for the issue tracker | [Documentation](https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository)
-`custom_components/area_scene_state_machine/*` | Integration files, this is where everything happens. | [Documentation](https://developers.home-assistant.io/docs/creating_component_index)
-`CONTRIBUTING.md` | Guidelines on how to contribute. | [Documentation](https://help.github.com/en/github/building-a-strong-community/setting-guidelines-for-repository-contributors)
-`LICENSE` | The license file for the project. | [Documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/licensing-a-repository)
-`README.md` | The file you are reading now, should contain info about the integration, installation and configuration instructions. | [Documentation](https://help.github.com/en/github/writing-on-github/basic-writing-and-formatting-syntax)
-`requirements.txt` | Python packages used for development/lint/testing this integration. | [Documentation](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
+### Manual Installation
 
-## How?
+1.  Copy the `custom_components/area_scene_state_machine` directory into your Home Assistant `custom_components` directory.
+2.  Restart Home Assistant.
 
-1. Create a new repository in GitHub, using this repository as a template by clicking the "Use this template" button in the GitHub UI.
-1. Open your new repository in Visual Studio Code devcontainer (Preferably with the "`Dev Containers: Clone Repository in Named Container Volume...`" option).
-1. Rename all instances of the `area_scene_state_machine` to `custom_components/<your_integration_domain>` (e.g. `custom_components/awesome_integration`).
-1. Rename all instances of the `Area Scene State Machine` to `<Your Integration Name>` (e.g. `Awesome Integration`).
-1. Run the `scripts/develop` to start HA and test out your new integration.
+## Configuration
 
-## Next steps
+1.  Go to **Settings > Devices & Services**.
+2.  Click **Add Integration** and search for **Area Scene State Machine**.
+3.  Follow the on-screen instructions. The integration will be set up, and you don't need to configure anything in this initial step.
 
-These are some next steps you may want to look into:
-- Add tests to your integration, [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) can help you get started.
-- Add brand images (logo/icon) to https://github.com/home-assistant/brands.
-- Create your first release.
-- Share your integration on the [Home Assistant Forum](https://community.home-assistant.io/).
-- Submit your integration to [HACS](https://hacs.xyz/docs/publish/start).
+## Customization
+
+You can customize each area's `select` entity:
+
+1.  Go to **Settings > Devices & Services**.
+2.  Find the **Area Scene State Machine** integration and click **Configure**.
+3.  Select the area you wish to customize from the dropdown.
+4.  You can set a custom **Name** and **Icon**. You can also enable **Reset Mode**.
+
+## How It Works
+
+The integration listens for scene activations in your Home Assistant instance. When a scene is activated, it updates the state of the corresponding area's `select` entity to reflect the change. This provides a simple way to know the "state" of an area based on its scenes.
+
+You can use this `select` entity in your automations or scripts. For example, you can build a lighting control automation that checks the state of an area's scene `select` before making changes.
